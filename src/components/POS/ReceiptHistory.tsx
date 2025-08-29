@@ -11,26 +11,31 @@ import {
   Eye,
   Printer,
   Download,
-  Filter
+  Filter,
+  ArrowLeft
 } from 'lucide-react';
 import { Receipt as ReceiptType } from '@/types/pos';
+import { Receipt } from '@/components/POS/Receipt';
 
 interface ReceiptHistoryProps {
   receipts: ReceiptType[];
   formatPrice: (price: number) => string;
   onViewReceipt: (receipt: ReceiptType) => void;
   onPrintReceipt: (receipt: ReceiptType) => void;
+  onBackToPOS?: () => void;
 }
 
 export const ReceiptHistory = ({ 
   receipts, 
   formatPrice, 
   onViewReceipt,
-  onPrintReceipt 
+  onPrintReceipt,
+  onBackToPOS 
 }: ReceiptHistoryProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDate, setSelectedDate] = useState('today');
   const [customDate, setCustomDate] = useState('');
+  const [viewingReceipt, setViewingReceipt] = useState<ReceiptType | null>(null);
 
   const getDateFilter = () => {
     const today = new Date();
@@ -73,6 +78,42 @@ export const ReceiptHistory = ({
 
   const totalRevenue = filteredReceipts.reduce((sum, receipt) => sum + receipt.total, 0);
   const totalProfit = filteredReceipts.reduce((sum, receipt) => sum + receipt.profit, 0);
+
+  const handleViewReceipt = (receipt: ReceiptType) => {
+    setViewingReceipt(receipt);
+  };
+
+  const handleBackToHistory = () => {
+    setViewingReceipt(null);
+  };
+
+  if (viewingReceipt) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={handleBackToHistory}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h2 className="text-xl font-semibold">Detail Nota</h2>
+          {onBackToPOS && (
+            <Button 
+              variant="outline"
+              onClick={onBackToPOS}
+              className="ml-auto"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Kembali ke POS
+            </Button>
+          )}
+        </div>
+        <Receipt receipt={viewingReceipt} formatPrice={formatPrice} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -239,7 +280,7 @@ export const ReceiptHistory = ({
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => onViewReceipt(receipt)}
+                        onClick={() => handleViewReceipt(receipt)}
                         className="h-7 px-2"
                       >
                         <Eye className="h-3 w-3" />

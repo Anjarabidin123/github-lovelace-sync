@@ -5,17 +5,131 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ShoppingCart as CartIcon, ArrowLeft, Printer } from 'lucide-react';
+import { ShoppingCart as CartIcon, ArrowLeft, Printer, CreditCard } from 'lucide-react';
 import { usePOSContext } from '@/contexts/POSContext';
+import { useToast } from '@/hooks/use-toast';
 
 export const CartView = () => {
   const navigate = useNavigate();
-  const { cart, formatPrice, receipts } = usePOSContext();
+  const { cart, formatPrice, receipts, processTransaction, clearCart } = usePOSContext();
+  const { toast } = useToast();
 
   const subtotal = cart.reduce((sum, item) => {
     const price = item.finalPrice || item.product.sellPrice;
     return sum + (price * item.quantity);
   }, 0);
+
+  const handleCheckout = () => {
+    if (cart.length === 0) return;
+    
+    const receipt = processTransaction('cash', 0);
+    if (receipt) {
+      toast({
+        title: "Transaksi Berhasil",
+        description: `Invoice ${receipt.id} telah dibuat`,
+      });
+      clearCart();
+      navigate('/', { state: { viewReceipt: receipt } });
+    }
+  };
+
+  const handlePrintReceipt = () => {
+    if (cart.length === 0) return;
+    
+    const receipt = processTransaction('cash', 0);
+    if (receipt) {
+      printReceipt(receipt);
+      clearCart();
+      navigate('/');
+    }
+  };
+
+  const printReceipt = (receipt: ReceiptType) => {
+    const formatDate = (date: Date) => {
+      return new Intl.DateTimeFormat('id-ID', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(date);
+    };
+
+    const printContent = `
+      <div style="font-family: monospace; max-width: 300px; margin: 0 auto;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <h2>TOKO ANJAR FOTOCOPY & ATK</h2>
+          <p>Jl. Raya Gajah - dempet (Depan Koramil Gajah)</p>
+          <p>Telp: (021) 1234-5678</p>
+        </div>
+        
+        <div style="text-align: center; margin-bottom: 20px;">
+          <h3>STRUK PENJUALAN</h3>
+          <p>${receipt.id}</p>
+          <p>${formatDate(receipt.timestamp)}</p>
+        </div>
+        
+        <div style="border-top: 1px dashed #000; margin: 20px 0; padding-top: 10px;">
+          ${receipt.items.map(item => `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+              <div>
+                <div style="font-weight: bold;">${item.product.name}</div>
+                <div style="font-size: 12px;">${formatPrice(item.finalPrice || item.product.sellPrice)} × ${item.quantity}</div>
+              </div>
+              <div style="font-weight: bold;">
+                ${formatPrice((item.finalPrice || item.product.sellPrice) * item.quantity)}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        
+        <div style="border-top: 1px dashed #000; margin: 20px 0; padding-top: 10px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span>Subtotal:</span>
+            <span>${formatPrice(receipt.subtotal)}</span>
+          </div>
+          ${receipt.discount > 0 ? `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #dc2626;">
+              <span>Diskon:</span>
+              <span>-${formatPrice(receipt.discount)}</span>
+            </div>
+          ` : ''}
+          <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; margin-top: 10px; border-top: 1px solid #000; padding-top: 10px;">
+            <span>TOTAL:</span>
+            <span>${formatPrice(receipt.total)}</span>
+          </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px; font-size: 12px;">
+          <p>Terima kasih atas kunjungan Anda!</p>
+          <p>Barang yang sudah dibeli tidak dapat dikembalikan</p>
+          <p style="margin-top: 10px;">Kasir: Admin | ${receipt.paymentMethod?.toUpperCase() || 'CASH'}</p>
+        </div>
+      </div>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Struk Penjualan - ${receipt.id}</title>
+            <style>
+              body { margin: 0; padding: 20px; }
+              @media print {
+                body { margin: 0; }
+              }
+            </style>
+          </head>
+          <body>
+            ${printContent}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background p-4 space-y-6">
@@ -90,12 +204,30 @@ export const CartView = () => {
                     <span>Total:</span>
                     <span className="text-primary">{formatPrice(subtotal)}</span>
                   </div>
-                  <Button 
-                    className="w-full" 
-                    onClick={() => navigate('/')}
-                  >
-                    Kembali ke Kasir
-                  </Button>
+                  <div className="space-y-2">
+                    <Button 
+                      className="w-full" 
+                      onClick={handleCheckout}
+                    >
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Checkout
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      className="w-full" 
+                      onClick={handlePrintReceipt}
+                    >
+                      <Printer className="h-4 w-4 mr-2" />
+                      Print Nota
+                    </Button>
+                    <Button 
+                      variant="secondary"
+                      className="w-full" 
+                      onClick={() => navigate('/')}
+                    >
+                      Kembali ke Kasir
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             )}

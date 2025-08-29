@@ -336,6 +336,7 @@ Profit: ${formatPrice(receipt.profit)}
                 formatPrice={formatPrice}
                 onViewReceipt={handleViewReceipt}
                 onPrintReceipt={handlePrintThermal}
+                onBackToPOS={() => setSelectedReceipt(null)}
               />
             )}
           </TabsContent>
