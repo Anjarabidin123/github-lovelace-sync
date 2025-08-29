@@ -35,7 +35,8 @@ export const StockManagement = ({
       product.category?.toLowerCase().includes(searchTerm.toLowerCase());
     
     if (showLowStockOnly) {
-      return matchesSearch && product.stock <= 5 && !product.isPhotocopy;
+      // 2 lusin = 24 unit, 1 kodi = 20 unit - use higher threshold
+      return matchesSearch && product.stock <= 24 && !product.isPhotocopy;
     }
     
     return matchesSearch;
@@ -114,7 +115,7 @@ export const StockManagement = ({
             <div 
               key={product.id}
               className={`border rounded-lg p-4 ${
-                product.stock <= 5 && !product.isPhotocopy 
+                product.stock <= 24 && !product.isPhotocopy 
                   ? 'border-error bg-error/5' 
                   : 'border-border'
               }`}
@@ -129,7 +130,7 @@ export const StockManagement = ({
                   )}
                 </div>
                 
-                {product.stock <= 5 && !product.isPhotocopy && (
+                {product.stock <= 24 && !product.isPhotocopy && (
                   <AlertTriangle className="h-4 w-4 text-error ml-2" />
                 )}
               </div>
@@ -154,7 +155,7 @@ export const StockManagement = ({
                   <span className="text-sm text-muted-foreground">Stok:</span>
                   <Badge 
                     variant={
-                      product.stock <= 5 && !product.isPhotocopy ? "destructive" : "secondary"
+                      product.stock <= 24 && !product.isPhotocopy ? "destructive" : "secondary"
                     }
                     className="font-mono"
                   >
@@ -229,10 +230,10 @@ export const StockManagement = ({
                 </div>
               )}
 
-              {product.stock <= 5 && !product.isPhotocopy && (
+              {product.stock <= 24 && !product.isPhotocopy && (
                 <div className="mt-2 p-2 bg-warning/10 rounded border border-warning/20">
                   <p className="text-xs text-warning font-medium">
-                    ⚠️ Stok menipis - perlu ditambah stok
+                    ⚠️ Stok menipis (≤ 2 lusin/1 kodi) - perlu ditambah stok
                   </p>
                 </div>
               )}

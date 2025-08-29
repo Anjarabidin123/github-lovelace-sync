@@ -195,7 +195,7 @@ export const usePOS = () => {
   }, []);
 
   const processTransaction = useCallback((paymentMethod: string = 'cash', discount: number = 0) => {
-    const { cart, products } = posState;
+    const { cart, products, receipts } = posState;
     
     if (cart.length === 0) {
       toast({
@@ -220,8 +220,17 @@ export const usePOS = () => {
       return sum + ((sellPrice - costPrice) * item.quantity);
     }, 0);
 
+    // Generate invoice ID with new format: INV-{counter}{DDMMYY}
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = String(now.getFullYear()).slice(-2);
+    const dateStr = `${day}${month}${year}`;
+    const counter = receipts.length + 1;
+    const invoiceId = `INV-${counter}${dateStr}`;
+
     const receipt: Receipt = {
-      id: `INV-${Date.now()}`,
+      id: invoiceId,
       items: [...cart],
       subtotal,
       discount,

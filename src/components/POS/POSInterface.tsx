@@ -7,6 +7,7 @@ import { AddProductForm } from './AddProductForm';
 import { SalesReport } from './SalesReport';
 import { PhotocopyDialog } from './PhotocopyDialog';
 import { StockManagement } from './StockManagement';
+import { ReceiptHistory } from './ReceiptHistory';
 import { usePOSContext } from '@/contexts/POSContext';
 import { Receipt as ReceiptType, Product } from '@/types/pos';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -150,7 +151,7 @@ Profit: ${formatPrice(receipt.profit)}
   );
 
   const totalProducts = products.length;
-  const lowStockProducts = products.filter(product => product.stock <= 5 && !product.isPhotocopy).length;
+  const lowStockProducts = products.filter(product => product.stock <= 24 && !product.isPhotocopy).length;
   
   const todayRevenue = receipts
     .filter(receipt => {
@@ -327,12 +328,15 @@ Profit: ${formatPrice(receipt.profit)}
           </TabsContent>
 
           <TabsContent value="receipt" className="space-y-4">
-            {selectedReceipt || lastReceipt ? (
-              <Receipt receipt={selectedReceipt || lastReceipt!} formatPrice={formatPrice} />
+            {selectedReceipt ? (
+              <Receipt receipt={selectedReceipt} formatPrice={formatPrice} />
             ) : (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">Belum ada transaksi hari ini</p>
-              </div>
+              <ReceiptHistory 
+                receipts={receipts}
+                formatPrice={formatPrice}
+                onViewReceipt={handleViewReceipt}
+                onPrintReceipt={handlePrintThermal}
+              />
             )}
           </TabsContent>
 
