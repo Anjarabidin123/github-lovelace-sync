@@ -38,12 +38,27 @@ export const usePOS = () => {
   }, []);
 
   const updateProduct = useCallback((productId: string, updates: Partial<Product>) => {
-    setPosState(prev => ({
-      ...prev,
-      products: prev.products.map(p => 
-        p.id === productId ? { ...p, ...updates } : p
-      ),
-    }));
+    setPosState(prev => {
+      const updatedProducts = prev.products.map(p => {
+        if (p.id === productId) {
+          const updatedProduct = { ...p, ...updates };
+          
+          // Handle rim/karton conversions for paper products
+          if (updatedProduct.category === 'Kertas' && updates.stock !== undefined) {
+            // Store stock in rim units for paper
+            updatedProduct.stock = updates.stock;
+          }
+          
+          return updatedProduct;
+        }
+        return p;
+      });
+      
+      return {
+        ...prev,
+        products: updatedProducts,
+      };
+    });
     
     toast({
       title: "Produk Diperbarui",
@@ -246,9 +261,16 @@ export const usePOS = () => {
       
       const cartItem = cart.find(item => item.product.id === product.id);
       if (cartItem) {
+        let newStock = product.stock - cartItem.quantity;
+        
+        // For paper products, ensure stock doesn't go below 0
+        if (product.category === 'Kertas') {
+          newStock = Math.max(0, newStock);
+        }
+        
         return {
           ...product,
-          stock: product.stock - cartItem.quantity,
+          stock: newStock,
         };
       }
       return product;
