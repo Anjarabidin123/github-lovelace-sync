@@ -4,6 +4,9 @@ import { toast } from '@/hooks/use-toast';
 
 const initialProducts: Product[] = [
   { id: '1', name: 'Fotocopy A4', costPrice: 200, sellPrice: 300, stock: 0, category: 'Fotocopy', isPhotocopy: true },
+  { id: '15', name: 'Fotocopy A4 Bolak-Balik', costPrice: 350, sellPrice: 500, stock: 0, category: 'Fotocopy', isPhotocopy: true },
+  { id: '16', name: 'Fotocopy A3', costPrice: 400, sellPrice: 600, stock: 0, category: 'Fotocopy', isPhotocopy: true },
+  { id: '17', name: 'Fotocopy Bufalo', costPrice: 300, sellPrice: 450, stock: 0, category: 'Fotocopy', isPhotocopy: true },
   { id: '2', name: 'Pulpen Standar', costPrice: 2000, sellPrice: 3000, stock: 50, category: 'Alat Tulis' },
   { id: '3', name: 'Pensil 2B', costPrice: 1500, sellPrice: 2500, stock: 100, category: 'Alat Tulis' },
   { id: '4', name: 'Kertas A4 (Rim)', costPrice: 45000, sellPrice: 55000, stock: 20, category: 'Kertas' },

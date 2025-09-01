@@ -7,8 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, Receipt as ReceiptIcon, CreditCard, Percent, Printer } from 'lucide-react';
-import { Receipt as ReceiptType } from '@/types/pos';
+import { Plus, Trash2, Receipt as ReceiptIcon, CreditCard, Percent, Printer, Copy } from 'lucide-react';
+import { Receipt as ReceiptType, Product } from '@/types/pos';
 import { toast } from 'sonner';
 import { hybridThermalPrinter } from '@/lib/hybrid-thermal-printer';
 import { formatThermalReceipt } from '@/lib/receipt-formatter';
@@ -26,9 +26,10 @@ interface ManualInvoiceProps {
   formatPrice: (price: number) => string;
   receipts: ReceiptType[];
   onPrintReceipt?: (receipt: ReceiptType) => void;
+  products: Product[];
 }
 
-export const ManualInvoice = ({ onCreateInvoice, formatPrice, receipts, onPrintReceipt }: ManualInvoiceProps) => {
+export const ManualInvoice = ({ onCreateInvoice, formatPrice, receipts, onPrintReceipt, products }: ManualInvoiceProps) => {
   const [items, setItems] = useState<ManualItem[]>([]);
   const [currentItem, setCurrentItem] = useState({
     name: '',
@@ -38,6 +39,19 @@ export const ManualInvoice = ({ onCreateInvoice, formatPrice, receipts, onPrintR
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [discount, setDiscount] = useState(0);
   const [discountType, setDiscountType] = useState<'amount' | 'percent'>('amount');
+
+  const photocopyProducts = products.filter(p => p.isPhotocopy);
+
+  const addPhotocopyItem = (product: Product, quantity: number) => {
+    const newItem: ManualItem = {
+      id: Date.now().toString(),
+      name: `${product.name} - ${quantity} lembar`,
+      quantity: 1,
+      unitPrice: quantity * product.sellPrice,
+      total: quantity * product.sellPrice
+    };
+    setItems(prev => [...prev, newItem]);
+  };
 
   const addItem = () => {
     if (!currentItem.name || currentItem.unitPrice <= 0 || currentItem.quantity <= 0) {
@@ -168,6 +182,36 @@ export const ManualInvoice = ({ onCreateInvoice, formatPrice, receipts, onPrintR
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Quick Photocopy Options */}
+            {photocopyProducts.length > 0 && (
+              <div className="border rounded-lg p-4 bg-secondary/20">
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <Copy className="h-4 w-4" />
+                  Quick Fotocopy
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {photocopyProducts.map(product => (
+                    <div key={product.id} className="space-y-2">
+                      <Label className="text-xs font-medium">{product.name}</Label>
+                      <div className="flex gap-1">
+                        {[10, 50, 100].map(qty => (
+                          <Button
+                            key={qty}
+                            size="sm"
+                            variant="outline"
+                            className="text-xs h-7 px-2"
+                            onClick={() => addPhotocopyItem(product, qty)}
+                          >
+                            {qty}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="md:col-span-2">

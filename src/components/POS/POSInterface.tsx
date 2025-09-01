@@ -383,6 +383,7 @@ Profit: ${formatPrice(receipt.profit)}
               formatPrice={formatPrice}
               receipts={receipts}
               onPrintReceipt={handlePrintThermal}
+              products={products}
             />
           </TabsContent>
 
