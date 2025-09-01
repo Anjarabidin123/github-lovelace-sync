@@ -1,15 +1,21 @@
+import { useEffect } from 'react';
 import { Receipt as ReceiptType } from '@/types/pos';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Printer, Download } from 'lucide-react';
+import { Printer, Download, Bluetooth, ArrowLeft } from 'lucide-react';
+import { hybridThermalPrinter } from '@/lib/hybrid-thermal-printer';
+import { formatThermalReceipt, formatPrintReceipt, formatMobileA4PrintReceipt } from '@/lib/receipt-formatter';
+import { toast } from 'sonner';
+import { BluetoothInstructions } from './BluetoothInstructions';
 
 interface ReceiptProps {
   receipt: ReceiptType;
   formatPrice: (price: number) => string;
+  onBack?: () => void;
 }
 
-export const Receipt = ({ receipt, formatPrice }: ReceiptProps) => {
+export const Receipt = ({ receipt, formatPrice, onBack }: ReceiptProps) => {
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('id-ID', {
       year: 'numeric',
@@ -20,59 +26,99 @@ export const Receipt = ({ receipt, formatPrice }: ReceiptProps) => {
     }).format(date);
   };
 
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        handleThermalPrint();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => document.removeEventListener('keydown', handleKeyPress);
+  }, [receipt]);
+
+  const handleThermalPrint = async () => {
+    try {
+      // Detect mobile device
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+      
+      if (isMobile) {
+        // Use browser print with full A4 format for mobile
+        handleMobileA4Print();
+        return;
+      }
+    
+      // Use thermal format for desktop
+      const thermalContent = formatThermalReceipt(receipt, formatPrice);
+      const success = await hybridThermalPrinter.print(thermalContent);
+      
+      if (success) {
+        toast.success(`Nota berhasil dicetak via ${hybridThermalPrinter.getPlatformInfo()}!`);
+      } else {
+        toast.error('Gagal mencetak nota. Pastikan printer terhubung.');
+      }
+    } catch (error) {
+      console.error('Print error:', error);
+      toast.error('Terjadi kesalahan saat mencetak.');
+    }
+  };
+
+  const handleConnectPrinter = async () => {
+    try {
+      const connected = await hybridThermalPrinter.connect();
+      if (connected) {
+        toast.success(`Printer ${hybridThermalPrinter.getPlatformInfo()} terhubung!`);
+      } else {
+        toast.error('Gagal menghubungkan printer bluetooth.');
+      }
+    } catch (error) {
+      console.error('Connection error:', error);
+      toast.error('Terjadi kesalahan saat menghubungkan printer.');
+    }
+  };
+
+  const handleMobileA4Print = () => {
+    const printContent = formatMobileA4PrintReceipt(receipt, formatPrice);
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Struk Penjualan - ${receipt.id}</title>
+            <style>
+              body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+              @media print {
+                body { margin: 0; padding: 0; }
+                @page { 
+                  margin: 10mm;
+                  size: A4;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            ${printContent}
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                  setTimeout(function() {
+                    window.close();
+                  }, 1000);
+                }, 500);
+              };
+            </script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+  };
+
   const handlePrint = () => {
-    const printContent = `
-      <div style="font-family: monospace; max-width: 300px; margin: 0 auto;">
-        <div style="text-align: center; margin-bottom: 20px;">
-          <h2>TOKO ANJAR FOTOCOPY & ATK</h2>
-          <p>Jl. Raya Gajah - dempet (Depan Koramil Gajah)</p>
-          <p>Telp: (021) 1234-5678</p>
-        </div>
-        
-        <div style="text-align: center; margin-bottom: 20px;">
-          <h3>STRUK PENJUALAN</h3>
-          <p>${receipt.id}</p>
-          <p>${formatDate(receipt.timestamp)}</p>
-        </div>
-        
-        <div style="border-top: 1px dashed #000; margin: 20px 0; padding-top: 10px;">
-          ${receipt.items.map(item => `
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-              <div>
-                <div style="font-weight: bold;">${item.product.name}</div>
-                <div style="font-size: 12px;">${formatPrice(item.finalPrice || item.product.sellPrice)} × ${item.quantity}</div>
-              </div>
-              <div style="font-weight: bold;">
-                ${formatPrice((item.finalPrice || item.product.sellPrice) * item.quantity)}
-              </div>
-            </div>
-          `).join('')}
-        </div>
-        
-        <div style="border-top: 1px dashed #000; margin: 20px 0; padding-top: 10px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-            <span>Subtotal:</span>
-            <span>${formatPrice(receipt.subtotal)}</span>
-          </div>
-          ${receipt.discount > 0 ? `
-            <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #dc2626;">
-              <span>Diskon:</span>
-              <span>-${formatPrice(receipt.discount)}</span>
-            </div>
-          ` : ''}
-          <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; margin-top: 10px; border-top: 1px solid #000; padding-top: 10px;">
-            <span>TOTAL:</span>
-            <span>${formatPrice(receipt.total)}</span>
-          </div>
-        </div>
-        
-        <div style="text-align: center; margin-top: 30px; font-size: 12px;">
-          <p>Terima kasih atas kunjungan Anda!</p>
-          <p>Barang yang sudah dibeli tidak dapat dikembalikan</p>
-          <p style="margin-top: 10px;">Kasir: Admin | ${receipt.paymentMethod?.toUpperCase() || 'CASH'}</p>
-        </div>
-      </div>
-    `;
+    const printContent = formatPrintReceipt(receipt, formatPrice);
 
     const printWindow = window.open('', '_blank');
     if (printWindow) {
@@ -98,7 +144,16 @@ export const Receipt = ({ receipt, formatPrice }: ReceiptProps) => {
   };
 
   return (
-    <Card className="pos-card max-w-md mx-auto">
+    <div className="space-y-4">
+      {onBack && (
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h2 className="text-xl font-semibold">Struk Penjualan</h2>
+        </div>
+      )}
+      <Card className="pos-card max-w-md mx-auto">
       <CardHeader className="text-center pb-4">
         <h2 className="text-xl font-bold">Toko Anjar Fotocopy & ATK</h2>
         <p className="text-sm text-muted-foreground">
@@ -170,12 +225,36 @@ export const Receipt = ({ receipt, formatPrice }: ReceiptProps) => {
       </CardContent>
 
       <div className="p-4 space-y-2">
+        <BluetoothInstructions />
+        
+        <div className="bg-muted/50 p-3 rounded-lg text-center text-sm text-muted-foreground mb-3 mt-3">
+          Tekan <kbd className="bg-background px-2 py-1 rounded border">Enter</kbd> untuk print otomatis
+        </div>
+        
         <Button 
+          className="w-full"
+          onClick={handleThermalPrint}
+        >
+          <Printer className="w-4 h-4 mr-2" />
+          Print Thermal (Enter)
+        </Button>
+
+        <Button 
+          variant="outline"
+          className="w-full"
+          onClick={handleConnectPrinter}
+        >
+          <Bluetooth className="w-4 h-4 mr-2" />
+          {hybridThermalPrinter.isConnected() ? 'Printer Terhubung' : 'Hubungkan Bluetooth'}
+        </Button>
+        
+        <Button 
+          variant="outline"
           className="w-full"
           onClick={handlePrint}
         >
           <Printer className="w-4 h-4 mr-2" />
-          Print Struk
+          Print Browser
         </Button>
         
         <Button 
@@ -201,5 +280,6 @@ export const Receipt = ({ receipt, formatPrice }: ReceiptProps) => {
         </Button>
       </div>
     </Card>
+    </div>
   );
 };
