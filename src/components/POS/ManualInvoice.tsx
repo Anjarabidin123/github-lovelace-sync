@@ -182,83 +182,144 @@ export const ManualInvoice = ({ onCreateInvoice, formatPrice, receipts, onPrintR
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Quick Photocopy Options */}
-            {photocopyProducts.length > 0 && (
-              <div className="border rounded-lg p-4 bg-secondary/20">
-                <h4 className="font-semibold mb-3 flex items-center gap-2">
-                  <Copy className="h-4 w-4" />
-                  Quick Fotocopy
-                </h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {photocopyProducts.map(product => (
-                    <div key={product.id} className="space-y-2">
-                      <Label className="text-xs font-medium">{product.name}</Label>
-                      <div className="flex gap-1">
-                        {[10, 50, 100].map(qty => (
-                          <Button
-                            key={qty}
-                            size="sm"
-                            variant="outline"
-                            className="text-xs h-7 px-2"
-                            onClick={() => addPhotocopyItem(product, qty)}
-                          >
-                            {qty}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="md:col-span-2">
-                  <Label htmlFor="itemName">Nama Barang/Jasa</Label>
-                  <Input
-                    id="itemName"
-                    placeholder="Masukkan nama barang atau jasa (misal: Fotocopy A4, Pulpen, dll)"
-                    value={currentItem.name}
-                    onChange={(e) => setCurrentItem(prev => ({ ...prev, name: e.target.value }))}
-                    onKeyDown={(e) => e.key === 'Enter' && addItem()}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="quantity">Jumlah</Label>
-                  <Input
-                    id="quantity"
-                    type="number"
-                    min="0"
-                    value={currentItem.quantity || ''}
-                    onChange={(e) => setCurrentItem(prev => ({ ...prev, quantity: Number(e.target.value) || 0 }))}
-                    placeholder="Contoh: 50 untuk 50 lembar fotocopy"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="unitPrice">Harga Satuan</Label>
-                  <Input
-                    id="unitPrice"
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={currentItem.unitPrice || ''}
-                    onChange={(e) => setCurrentItem(prev => ({ ...prev, unitPrice: Number(e.target.value) || 0 }))}
-                    onKeyDown={(e) => e.key === 'Enter' && addItem()}
-                  />
-                </div>
-              </div>
+            <Tabs defaultValue="photocopy" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="photocopy">Fotocopy</TabsTrigger>
+                <TabsTrigger value="regular">Barang/Jasa Lain</TabsTrigger>
+              </TabsList>
               
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
-                  Total: {formatPrice(currentItem.quantity * currentItem.unitPrice)}
+              <TabsContent value="photocopy" className="space-y-4">
+                {photocopyProducts.length > 0 && (
+                  <div className="space-y-4">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <Copy className="h-4 w-4" />
+                      Pilih Jenis Fotocopy
+                    </h4>
+                    {photocopyProducts.map(product => (
+                      <div key={product.id} className="border rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <Label className="font-medium">{product.name}</Label>
+                            <div className="text-sm text-muted-foreground">
+                              {formatPrice(product.sellPrice)} per lembar
+                            </div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-4 gap-2">
+                          <div className="col-span-2">
+                            <Label>Jumlah Lembar</Label>
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              min="1"
+                              onChange={(e) => {
+                                const qty = Number(e.target.value) || 0;
+                                if (qty > 0) {
+                                  const inputElement = e.target as HTMLInputElement;
+                                  inputElement.dataset.productId = product.id;
+                                  inputElement.dataset.quantity = qty.toString();
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const inputElement = e.target as HTMLInputElement;
+                                  const qty = Number(inputElement.value) || 0;
+                                  if (qty > 0) {
+                                    addPhotocopyItem(product, qty);
+                                    inputElement.value = '';
+                                  }
+                                }
+                              }}
+                            />
+                          </div>
+                          <div className="col-span-2 flex items-end">
+                            <Button 
+                              className="w-full"
+                              onClick={(e) => {
+                                const container = e.currentTarget.closest('.border');
+                                const input = container?.querySelector('input[type="number"]') as HTMLInputElement;
+                                const qty = Number(input?.value) || 0;
+                                if (qty > 0) {
+                                  addPhotocopyItem(product, qty);
+                                  input.value = '';
+                                } else {
+                                  toast.error('Masukkan jumlah lembar!');
+                                }
+                              }}
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Tambah
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="mt-2 flex gap-2">
+                          <Label className="text-xs">Quick:</Label>
+                          {[10, 50, 100].map(qty => (
+                            <Button
+                              key={qty}
+                              size="sm"
+                              variant="outline"
+                              className="text-xs h-6 px-2"
+                              onClick={() => addPhotocopyItem(product, qty)}
+                            >
+                              {qty}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="regular" className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="md:col-span-2">
+                    <Label htmlFor="itemName">Nama Barang/Jasa</Label>
+                    <Input
+                      id="itemName"
+                      placeholder="Masukkan nama barang atau jasa (misal: Pulpen, Buku, dll)"
+                      value={currentItem.name}
+                      onChange={(e) => setCurrentItem(prev => ({ ...prev, name: e.target.value }))}
+                      onKeyDown={(e) => e.key === 'Enter' && addItem()}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="quantity">Jumlah</Label>
+                    <Input
+                      id="quantity"
+                      type="number"
+                      min="0"
+                      value={currentItem.quantity || ''}
+                      onChange={(e) => setCurrentItem(prev => ({ ...prev, quantity: Number(e.target.value) || 0 }))}
+                      placeholder="Jumlah"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="unitPrice">Harga Satuan</Label>
+                    <Input
+                      id="unitPrice"
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      value={currentItem.unitPrice || ''}
+                      onChange={(e) => setCurrentItem(prev => ({ ...prev, unitPrice: Number(e.target.value) || 0 }))}
+                      onKeyDown={(e) => e.key === 'Enter' && addItem()}
+                    />
+                  </div>
                 </div>
-                <Button onClick={addItem} size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Tambah Item
-                </Button>
-              </div>
-            </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    Total: {formatPrice(currentItem.quantity * currentItem.unitPrice)}
+                  </div>
+                  <Button onClick={addItem} size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Tambah Item
+                  </Button>
+                </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 
