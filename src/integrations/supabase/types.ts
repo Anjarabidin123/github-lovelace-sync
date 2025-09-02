@@ -21,23 +21,25 @@ export type Database = {
           cost_price: number
           created_at: string
           id: string
-          is_photocopy: boolean
+          is_photocopy: boolean | null
           name: string
           sell_price: number
           stock: number
           updated_at: string
+          user_id: string
         }
         Insert: {
           barcode?: string | null
           category?: string | null
-          cost_price: number
+          cost_price?: number
           created_at?: string
           id?: string
-          is_photocopy?: boolean
+          is_photocopy?: boolean | null
           name: string
-          sell_price: number
+          sell_price?: number
           stock?: number
           updated_at?: string
+          user_id: string
         }
         Update: {
           barcode?: string | null
@@ -45,71 +47,78 @@ export type Database = {
           cost_price?: number
           created_at?: string
           id?: string
-          is_photocopy?: boolean
+          is_photocopy?: boolean | null
           name?: string
           sell_price?: number
           stock?: number
           updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
       profiles: {
         Row: {
-          admin_password: string | null
           created_at: string
-          email: string
+          display_name: string | null
           id: string
+          store_name: string | null
           updated_at: string
           user_id: string
-          username: string
+          username: string | null
         }
         Insert: {
-          admin_password?: string | null
           created_at?: string
-          email: string
+          display_name?: string | null
           id?: string
+          store_name?: string | null
           updated_at?: string
           user_id: string
-          username: string
+          username?: string | null
         }
         Update: {
-          admin_password?: string | null
           created_at?: string
-          email?: string
+          display_name?: string | null
           id?: string
+          store_name?: string | null
           updated_at?: string
           user_id?: string
-          username?: string
+          username?: string | null
         }
         Relationships: []
       }
       receipt_items: {
         Row: {
+          cost_price: number
           created_at: string
           final_price: number | null
           id: string
           product_id: string
+          product_name: string
           quantity: number
           receipt_id: string
-          unit_price: number
+          sell_price: number
         }
         Insert: {
+          cost_price: number
           created_at?: string
           final_price?: number | null
           id?: string
           product_id: string
+          product_name: string
           quantity: number
           receipt_id: string
-          unit_price: number
+          sell_price: number
         }
         Update: {
+          cost_price?: number
           created_at?: string
           final_price?: number | null
           id?: string
           product_id?: string
+          product_name?: string
           quantity?: number
           receipt_id?: string
-          unit_price?: number
+          sell_price?: number
         }
         Relationships: [
           {
@@ -135,6 +144,7 @@ export type Database = {
           id: string
           payment_method: string | null
           profit: number
+          receipt_number: string
           subtotal: number
           total: number
           user_id: string
@@ -144,9 +154,10 @@ export type Database = {
           discount?: number
           id?: string
           payment_method?: string | null
-          profit: number
-          subtotal: number
-          total: number
+          profit?: number
+          receipt_number: string
+          subtotal?: number
+          total?: number
           user_id: string
         }
         Update: {
@@ -155,8 +166,36 @@ export type Database = {
           id?: string
           payment_method?: string | null
           profit?: number
+          receipt_number?: string
           subtotal?: number
           total?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      shopping_lists: {
+        Row: {
+          created_at: string
+          id: string
+          items: Json
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          items?: Json
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          items?: Json
+          name?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
