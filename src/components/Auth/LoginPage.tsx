@@ -12,10 +12,13 @@ import { supabase } from '@/integrations/supabase/client';
 export const LoginPage = () => {
   const { signIn, signInWithUsername, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
+  const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     username: '',
     password: '',
+    confirmPassword: '',
+    displayName: ''
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -50,6 +53,41 @@ export const LoginPage = () => {
     
     if (result.error) {
       setError(result.error.message);
+    }
+    setIsLoading(false);
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Password tidak cocok');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!formData.email || !formData.username || !formData.password || !formData.displayName) {
+      setError('Semua field harus diisi');
+      setIsLoading(false);
+      return;
+    }
+
+    const result = await signUp(formData.email, formData.username, formData.password, formData.displayName);
+    
+    if (result.error) {
+      setError(result.error.message);
+    } else {
+      toast.success('Akun berhasil dibuat! Silakan login dengan username dan password Anda.');
+      setIsSignUp(false);
+      setFormData({
+        email: '',
+        username: '',
+        password: '',
+        confirmPassword: '',
+        displayName: ''
+      });
     }
     setIsLoading(false);
   };
@@ -142,25 +180,76 @@ export const LoginPage = () => {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Kasir Toko Anjar</CardTitle>
           <CardDescription>
-            Masuk ke sistem kasir
+            {isSignUp ? 'Daftarkan akun baru' : 'Masuk ke sistem kasir'}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSignIn} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                type="text"
-                value={formData.email}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
-                  email: e.target.value 
-                })}
-                placeholder="tokoanjar"
-                required
-              />
-            </div>
+          <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-4">
+            {isSignUp && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="displayName">Nama Lengkap</Label>
+                  <Input
+                    id="displayName"
+                    type="text"
+                    value={formData.displayName}
+                    onChange={(e) => setFormData({ 
+                      ...formData, 
+                      displayName: e.target.value 
+                    })}
+                    placeholder="Nama Lengkap"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ 
+                      ...formData, 
+                      email: e.target.value 
+                    })}
+                    placeholder="email@example.com"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="signupUsername">Username</Label>
+                  <Input
+                    id="signupUsername"
+                    type="text"
+                    value={formData.username}
+                    onChange={(e) => setFormData({ 
+                      ...formData, 
+                      username: e.target.value 
+                    })}
+                    placeholder="username unik"
+                    required
+                  />
+                </div>
+              </>
+            )}
+
+            {!isSignUp && (
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ 
+                    ...formData, 
+                    email: e.target.value 
+                  })}
+                  placeholder="tokoanjar"
+                  required
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
@@ -174,6 +263,20 @@ export const LoginPage = () => {
               />
             </div>
 
+            {isSignUp && (
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Konfirmasi Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+            )}
+
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
@@ -182,15 +285,37 @@ export const LoginPage = () => {
 
             <div className="space-y-2">
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Loading...' : 'Masuk'}
+                {isLoading ? 'Loading...' : (isSignUp ? 'Daftar' : 'Masuk')}
               </Button>
+              
+              {!isSignUp && (
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  className="w-full text-sm" 
+                  onClick={() => setShowForgotPassword(true)}
+                >
+                  Lupa Password?
+                </Button>
+              )}
+              
               <Button 
                 type="button" 
-                variant="ghost" 
+                variant="outline" 
                 className="w-full text-sm" 
-                onClick={() => setShowForgotPassword(true)}
+                onClick={() => {
+                  setIsSignUp(!isSignUp);
+                  setError('');
+                  setFormData({
+                    email: '',
+                    username: '',
+                    password: '',
+                    confirmPassword: '',
+                    displayName: ''
+                  });
+                }}
               >
-                Lupa Password?
+                {isSignUp ? 'Sudah punya akun? Login' : 'Belum punya akun? Daftar'}
               </Button>
             </div>
           </form>
