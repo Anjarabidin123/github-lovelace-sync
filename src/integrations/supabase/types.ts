@@ -58,8 +58,10 @@ export type Database = {
       }
       profiles: {
         Row: {
+          admin_password: string | null
           created_at: string
           display_name: string | null
+          email: string | null
           id: string
           store_name: string | null
           updated_at: string
@@ -67,8 +69,10 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          admin_password?: string | null
           created_at?: string
           display_name?: string | null
+          email?: string | null
           id?: string
           store_name?: string | null
           updated_at?: string
@@ -76,8 +80,10 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          admin_password?: string | null
           created_at?: string
           display_name?: string | null
+          email?: string | null
           id?: string
           store_name?: string | null
           updated_at?: string

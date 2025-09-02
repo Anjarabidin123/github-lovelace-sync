@@ -118,6 +118,8 @@ export const useSupabasePOS = () => {
   };
 
   const addProduct = async (productData: Omit<Product, 'id'>) => {
+    if (!user) return;
+    
     try {
       const { error } = await supabase
         .from('products')
@@ -128,7 +130,8 @@ export const useSupabasePOS = () => {
           stock: productData.stock,
           barcode: productData.barcode,
           category: productData.category,
-          is_photocopy: productData.isPhotocopy
+          is_photocopy: productData.isPhotocopy,
+          user_id: user.id
         });
 
       if (error) throw error;
@@ -176,6 +179,7 @@ export const useSupabasePOS = () => {
       );
 
       // Create receipt
+      const receiptNumber = `R-${Date.now()}`;
       const { data: receiptData, error: receiptError } = await supabase
         .from('receipts')
         .insert({
@@ -184,7 +188,8 @@ export const useSupabasePOS = () => {
           discount,
           total,
           profit,
-          payment_method: paymentMethod
+          payment_method: paymentMethod,
+          receipt_number: receiptNumber
         })
         .select()
         .single();
@@ -196,7 +201,9 @@ export const useSupabasePOS = () => {
         receipt_id: receiptData.id,
         product_id: item.product.id,
         quantity: item.quantity,
-        unit_price: item.product.sellPrice,
+        sell_price: item.product.sellPrice,
+        cost_price: item.product.costPrice,
+        product_name: item.product.name,
         final_price: item.finalPrice
       }));
 
